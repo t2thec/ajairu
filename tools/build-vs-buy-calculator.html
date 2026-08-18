@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build vs Buy Calculator - ajairu.dev</title>
+    <meta name="description" content="A free, interactive build vs buy calculator for UK SMEs. Compare the 3-year cost of building custom software vs buying an off-the-shelf product.">
+    <style>
+        :root {
+            --bg: #0f1117;
+            --card: #1a1d29;
+            --text: #e4e4e7;
+            --muted: #9ca3af;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #2d3142;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 20px; }
+        .container { max-width: 700px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 40px; }
+        header h1 { font-size: 1.8rem; margin-bottom: 10px; }
+        header p { color: var(--muted); font-size: 0.95rem; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+        .card h2 { font-size: 1.2rem; margin-bottom: 16px; color: var(--accent-hover); }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--muted); }
+        .input-group input { width: 100%; padding: 10px 14px; background: var(--bg); border: 2px solid var(--border); border-radius: 8px; color: var(--text); font-size: 1rem; }
+        .input-group input:focus { outline: none; border-color: var(--accent); }
+        .input-group .hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+        .toggle-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .toggle { padding: 8px 16px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; background: transparent; color: var(--text); }
+        .toggle:hover { border-color: var(--accent); }
+        .toggle.selected { background: var(--accent); border-color: var(--accent); color: white; }
+        .results { display: none; }
+        .result-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+        .result-card h2 { font-size: 1.3rem; margin-bottom: 20px; text-align: center; }
+        .comparison { display: flex; gap: 16px; margin-bottom: 20px; }
+        .comparison-item { flex: 1; text-align: center; padding: 20px; border-radius: 10px; border: 2px solid var(--border); }
+        .comparison-item.winner { border-color: var(--success); background: rgba(34, 197, 94, 0.1); }
+        .comparison-item .label { font-size: 0.9rem; color: var(--muted); margin-bottom: 8px; }
+        .comparison-item .amount { font-size: 1.8rem; font-weight: bold; }
+        .comparison-item .period { font-size: 0.8rem; color: var(--muted); }
+        .verdict { text-align: center; font-size: 1.1rem; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+        .verdict.buy { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+        .verdict.build { background: rgba(99, 102, 241, 0.15); color: var(--accent-hover); }
+        .verdict.hybrid { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .breakdown { margin-top: 16px; }
+        .breakdown h3 { font-size: 1rem; margin-bottom: 12px; color: var(--muted); }
+        .breakdown-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .breakdown-row:last-child { border-bottom: none; font-weight: 600; }
+        .actions { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
+        .btn { padding: 12px 28px; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.2s; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary { background: transparent; color: var(--text); border: 2px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--accent); }
+        .cta { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px; }
+        .cta a { color: var(--accent-hover); text-decoration: none; font-weight: 600; }
+        .cta a:hover { text-decoration: underline; }
+        footer { text-align: center; margin-top: 40px; color: var(--muted); font-size: 0.85rem; }
+        footer a { color: var(--accent-hover); text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Build vs Buy Calculator</h1>
+        <p>Compare the 3-year total cost of building custom software vs buying an off-the-shelf product.</p>
+    </header>
+
+    <div class="card">
+        <h2>Buying Costs (Off-the-Shelf)</h2>
+        <div class="input-group">
+            <label>Monthly subscription per user (GBP)</label>
+            <input type="number" id="buyMonthly" value="50" min="0">
+            <div class="hint">e.g. 50 per user per month</div>
+        </div>
+        <div class="input-group">
+            <label>Number of users</label>
+            <input type="number" id="buyUsers" value="10" min="1">
+        </div>
+        <div class="input-group">
+            <label>One-time setup and configuration (GBP)</label>
+            <input type="number" id="buySetup" value="2000" min="0">
+        </div>
+        <div class="input-group">
+            <label>One-time integration costs (GBP)</label>
+            <input type="number" id="buyIntegration" value="1000" min="0">
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Building Costs (Custom Software)</h2>
+        <div class="input-group">
+            <label>One-time development cost (GBP)</label>
+            <input type="number" id="buildDev" value="30000" min="0">
+            <div class="hint">Design, build, test, deploy</div>
+        </div>
+        <div class="input-group">
+            <label>Monthly maintenance and hosting (GBP)</label>
+            <input type="number" id="buildMonthly" value="500" min="0">
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Fit Assessment</h2>
+        <p style="color: var(--muted); margin-bottom: 12px; font-size: 0.9rem;">How well does the off-the-shelf product fit your actual process?</p>
+        <div class="toggle-group">
+            <button class="toggle selected" onclick="selectFit(85, this)">Excellent (85%+)</button>
+            <button class="toggle" onclick="selectFit(70, this)">Good (70%)</button>
+            <button class="toggle" onclick="selectFit(50, this)">Partial (50%)</button>
+            <button class="toggle" onclick="selectFit(30, this)">Poor (30%)</button>
+        </div>
+        <p style="color: var(--muted); margin-bottom: 12px; font-size: 0.9rem;">Do you have the in-house capability to maintain custom software?</p>
+        <div class="toggle-group">
+            <button class="toggle selected" onclick="selectCapability(true, this)">Yes, in-house</button>
+            <button class="toggle" onclick="selectCapability(false, this)">No, need a partner</button>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn btn-primary" onclick="calculate()">Calculate</button>
+        <button class="btn btn-secondary" onclick="reset()">Reset</button>
+    </div>
+
+    <div class="results" id="results">
+        <div class="result-card">
+            <h2>3-Year Cost Comparison</h2>
+            <div class="comparison" id="comparison"></div>
+            <div class="verdict" id="verdict"></div>
+            <div class="breakdown" id="breakdown"></div>
+        </div>
+        <div class="cta" id="cta"></div>
+    </div>
+
+    <footer>
+        <p>Part of the <a href="https://github.com/t2thec/ajairu">ajairu</a> open-source resources for UK SMEs.</p>
+        <p>For bespoke software development, visit <a href="https://ajairu.dev">ajairu.dev</a></p>
+    </footer>
+</div>
+
+<script>
+let fitScore = 85;
+let hasCapability = true;
+
+function selectFit(score, btn) {
+    fitScore = score;
+    btn.parentElement.querySelectorAll('.toggle').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+}
+
+function selectCapability(capable, btn) {
+    hasCapability = capable;
+    btn.parentElement.querySelectorAll('.toggle').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+}
+
+function calculate() {
+    const buyMonthly = parseFloat(document.getElementById('buyMonthly').value) || 0;
+    const buyUsers = parseInt(document.getElementById('buyUsers').value) || 1;
+    const buySetup = parseFloat(document.getElementById('buySetup').value) || 0;
+    const buyIntegration = parseFloat(document.getElementById('buyIntegration').value) || 0;
+    const buildDev = parseFloat(document.getElementById('buildDev').value) || 0;
+    const buildMonthly = parseFloat(document.getElementById('buildMonthly').value) || 0;
+
+    // 3-year costs
+    const buySubscription = buyMonthly * buyUsers * 36;
+    const buyTotal = buySubscription + buySetup + buyIntegration;
+    const buildTotal = buildDev + (buildMonthly * 36);
+
+    // Opportunity cost of poor fit (estimated 15% productivity loss per 10% fit gap)
+    const fitGap = 100 - fitScore;
+    const opportunityCostPerYear = (buyTotal / 3) * (fitGap / 100) * 0.15;
+    const opportunityCost3Year = opportunityCostPerYear * 3;
+
+    const buyAdjusted = buyTotal + opportunityCost3Year;
+
+    // Display comparison
+    const buyIsCheaper = buyAdjusted <= buildTotal;
+    let comparisonHtml = `
+        <div class="comparison-item ${buyIsCheaper ? 'winner' : ''}">
+            <div class="label">Buy (Off-the-Shelf)</div>
+            <div class="amount">GBP ${buyTotal.toLocaleString('en-GB', {maximumFractionDigits: 0})}</div>
+            <div class="period">over 3 years</div>
+        </div>
+        <div class="comparison-item ${!buyIsCheaper ? 'winner' : ''}">
+            <div class="label">Build (Custom)</div>
+            <div class="amount">GBP ${buildTotal.toLocaleString('en-GB', {maximumFractionDigits: 0})}</div>
+            <div class="period">over 3 years</div>
+        </div>`;
+    document.getElementById('comparison').innerHTML = comparisonHtml;
+
+    // Verdict
+    let verdictClass, verdictText, ctaHtml;
+    if (fitScore >= 85 && buyIsCheaper) {
+        verdictClass = 'buy';
+        verdictText = 'Buy. The off-the-shelf product fits well and costs less. This is the clear choice.';
+        ctaHtml = `<p>The off-the-shelf option is your best bet given the fit and cost.</p>
+                   <p>If you need help integrating it with your existing systems, <a href="https://ajairu.dev">contact ajairu.dev</a>.</p>`;
+    } else if (fitScore >= 85 && !buyIsCheaper) {
+        verdictClass = 'hybrid';
+        verdictText = 'Consider a hybrid approach. The fit is good but building is cheaper over 3 years. Evaluate flexibility and control needs.';
+        ctaHtml = `<p>A hybrid approach (buy a platform and extend it) may give you the best of both worlds.</p>
+                   <p><a href="https://ajairu.dev">Talk to ajairu.dev about a hybrid approach</a></p>`;
+    } else if (fitScore < 85 && buyIsCheaper) {
+        verdictClass = 'hybrid';
+        verdictText = 'Consider a hybrid approach. Buying is cheaper but the fit gap means workarounds. Extending a platform may close the gap.';
+        ctaHtml = `<p>Buying is cheaper but the fit gap (only ${fitScore}% match) means manual workarounds. A hybrid approach could close that gap.</p>
+                   <p><a href="https://ajairu.dev">Talk to ajairu.dev about a hybrid approach</a></p>`;
+    } else {
+        verdictClass = 'build';
+        verdictText = 'Build. The off-the-shelf fit is poor and building is cost-competitive over 3 years, with full control.';
+        ctaHtml = `<p>Building custom software is your best option here. You get a better fit and full control over the roadmap.</p>
+                   <p><a href="https://ajairu.dev">Talk to ajairu.dev about building your software</a></p>`;
+    }
+
+    if (!hasCapability && !buyIsCheaper) {
+        verdictText += ' Note: You will need a development partner for ongoing maintenance.';
+    }
+
+    const verdictEl = document.getElementById('verdict');
+    verdictEl.textContent = verdictText;
+    verdictEl.className = 'verdict ' + verdictClass;
+
+    // Breakdown
+    let breakdownHtml = '<h3>Cost Breakdown (3 years)</h3>';
+    breakdownHtml += `<div class="breakdown-row"><span>Buy: Subscription (${buyUsers} users x GBP ${buyMonthly}/mo x 36)</span><span>GBP ${buySubscription.toLocaleString('en-GB', {maximumFractionDigits: 0})}</span></div>`;
+    breakdownHtml += `<div class="breakdown-row"><span>Buy: Setup and configuration</span><span>GBP ${buySetup.toLocaleString('en-GB', {maximumFractionDigits: 0})}</span></div>`;
+    breakdownHtml += `<div class="breakdown-row"><span>Buy: Integration</span><span>GBP ${buyIntegration.toLocaleString('en-GB', {maximumFractionDigits: 0})}</span></div>`;
+    if (opportunityCost3Year > 0) {
+        breakdownHtml += `<div class="breakdown-row"><span>Buy: Productivity loss from fit gap (${fitGap}%)</span><span>GBP ${opportunityCost3Year.toLocaleString('en-GB', {maximumFractionDigits: 0})}</span></div>`;
+    }
+    breakdownHtml += `<div class="breakdown-row" style="margin-top: 8px;"><span>Buy: Total (adjusted)</span><span>GBP ${buyAdjusted.toLocaleString('en-GB', {maximumFractionDigits: 0})}</span></div>`;
+    breakdownHtml += `<div class="breakdown-row"><span>Build: Development (one-time)</span><span>GBP ${buildDev.toLocaleString('en-GB', {maximumFractionDigits: 0})}</span></div>`;
+    breakdownHtml += `<div class="breakdown-row"><span>Build: Maintenance and hosting (GBP ${buildMonthly}/mo x 36)</span><span>GBP ${(buildMonthly * 36).toLocaleString('en-GB', {maximumFractionDigits: 0})}</span></div>`;
+    breakdownHtml += `<div class="breakdown-row"><span>Build: Total</span><span>GBP ${buildTotal.toLocaleString('en-GB', {maximumFractionDigits: 0})}</span></div>`;
+    document.getElementById('breakdown').innerHTML = breakdownHtml;
+
+    document.getElementById('cta').innerHTML = ctaHtml;
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function reset() {
+    document.getElementById('buyMonthly').value = 50;
+    document.getElementById('buyUsers').value = 10;
+    document.getElementById('buySetup').value = 2000;
+    document.getElementById('buyIntegration').value = 1000;
+    document.getElementById('buildDev').value = 30000;
+    document.getElementById('buildMonthly').value = 500;
+    fitScore = 85;
+    hasCapability = true;
+    document.querySelectorAll('.toggle-group').forEach(g => {
+        g.querySelectorAll('.toggle').forEach(b => b.classList.remove('selected'));
+        g.querySelector('.toggle').classList.add('selected');
+    });
+    document.getElementById('results').style.display = 'none';
+}
+</script>
+</body>
+</html>
